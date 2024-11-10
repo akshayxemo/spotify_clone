@@ -5,10 +5,16 @@ import 'package:spotify_clone/common/widgets/appbar/app_bar.dart';
 import 'package:spotify_clone/common/widgets/button/basic_app_button.dart';
 import 'package:spotify_clone/core/config/assets/app_vectors.dart';
 import 'package:spotify_clone/core/config/theme/app_colors.dart';
+import 'package:spotify_clone/data/models/auth/signin_user_req.dart';
+import 'package:spotify_clone/domain/usecases/auth/signin.dart';
 import 'package:spotify_clone/presentation/auth/pages/signup.dart';
+import 'package:spotify_clone/presentation/root/pages/root.dart';
+import 'package:spotify_clone/service_locator.dart';
 
 class SignInPage extends StatelessWidget {
-  const SignInPage({super.key});
+  SignInPage({super.key});
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +27,7 @@ class SignInPage extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: _registerNowText(context),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 50),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -39,7 +45,28 @@ class SignInPage extends StatelessWidget {
             const SizedBox(
               height: 20,
             ),
-            BasicAppButton(onPressed: () {}, title: "Sign In")
+            BasicAppButton(
+                onPressed: () async {
+                  var result = await serviceLocator<SigninUseCase>().call(
+                    params: SigninUserReq(
+                      email: _email.text.toString(),
+                      password: _password.text.toString(),
+                    ),
+                  );
+
+                  result.fold((ifLeft) {
+                    var snackBar = SnackBar(content: Text(ifLeft));
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  }, (ifRight) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => const RootPage(),
+                      ),
+                      (route) => false,
+                    );
+                  });
+                },
+                title: "Sign In")
           ],
         ),
       ),
@@ -56,6 +83,7 @@ class SignInPage extends StatelessWidget {
 
   Widget _userNameOrEmailField(BuildContext context) {
     return TextField(
+      controller: _email,
       cursorColor: context.isDarkMode ? Colors.white : AppColors.gray,
       decoration: const InputDecoration(hintText: "Enter Username Or Email")
           .applyDefaults(
@@ -66,6 +94,7 @@ class SignInPage extends StatelessWidget {
 
   Widget _passwordField(BuildContext context) {
     return TextField(
+      controller: _password,
       cursorColor: context.isDarkMode ? Colors.white : AppColors.gray,
       decoration:
           const InputDecoration(hintText: "Enter Password").applyDefaults(
@@ -91,7 +120,7 @@ class SignInPage extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (context) => const SignupPage(),
+                  builder: (context) => SignupPage(),
                 ),
               );
             },
